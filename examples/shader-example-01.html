@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!--  -->
+
+<head>
+    <title> shader-example-01 </title>
+    <meta charset="utf-8" />
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body> </body>
+
+<script type="module">
+
+    import * as THREE from '../jsm/three.module.135.js';
+    import { OrbitControls } from '../jsm/OrbitControls.135.js';
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+    camera.position.set(0, 0, 7);
+
+    const scene = new THREE.Scene();
+
+    const circleGeometry = new THREE.CircleBufferGeometry(6, 64);
+    const circleMesh = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+    circleMesh.position.z = -4.0;
+    scene.add(circleMesh);
+
+    const shaderMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            v_Uv: { value: new THREE.Vector2() }
+        },
+        vertexShader: vertexShader(),
+        fragmentShader: fragmentShader(),
+        side: THREE.DoubleSide,
+        transparent: true,
+    });
+
+    const planeGeometry = new THREE.PlaneBufferGeometry(5, 5);
+    const planeMesh = new THREE.Mesh(planeGeometry, shaderMaterial);
+    scene.add(planeMesh);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xfefefe);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    animate();
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+
+    }
+
+    function vertexShader() { //   return `    `;   a multiline template literal 
+        return `
+        varying vec2 v_Uv;
+        
+		void main( ) {
+
+				v_Uv = uv;
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				gl_Position = projectionMatrix * mvPosition;
+            
+		} 
+    `;
+    }
+
+    function fragmentShader() {
+        return `
+        varying vec2 v_Uv;
+        
+        void main( ) {
+            
+            vec2 position = v_Uv;
+            
+            vec3 color = vec3( position.x, position );
+            
+            gl_FragColor = vec4( color, position.y ); // color, transparency
+            
+         // gl_FragColor = vec4( position.x, position.x, position.y, position.y ); // is identical
+            
+        }
+    `;
+    }
+
+</script>
+
+</html>
