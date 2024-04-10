@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!--  -->
+
+<head>
+    <title> ShaderExamples_A </title>
+    <meta charset="utf-8" />
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body> </body>
+
+<script type="module">
+
+    import * as THREE from '../jsm/three.module.135.js';
+    import { OrbitControls } from '../jsm/OrbitControls.135.js';
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(1, 3, 4);
+
+    const scene = new THREE.Scene();
+
+    const shaderMaterial_1 = new THREE.ShaderMaterial({
+        uniforms: {
+            angle: { value: 0.0 }
+        },
+        vertexShader: rotationShader(),
+        fragmentShader: fragmentShader_1(),
+        wireframe: true,
+    });
+
+    const shaderMaterial_2 = new THREE.ShaderMaterial({
+        uniforms: {
+            angle: { value: 0.0 }
+        },
+        vertexShader: rotationShader(),
+        fragmentShader: fragmentShader_2(),
+        side: THREE.DoubleSide,
+    });
+
+    const shaderMaterials = [
+
+        shaderMaterial_1,
+        shaderMaterial_2,
+        shaderMaterial_1,
+        shaderMaterial_2,
+        shaderMaterial_1,
+        shaderMaterial_2
+
+    ];
+
+    const geometry = new THREE.BoxBufferGeometry();
+    const mesh = new THREE.Mesh(geometry, shaderMaterials);
+
+    scene.add(mesh);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xdedede);
+    document.body.appendChild(renderer.domElement);
+
+    let controls = new OrbitControls(camera, renderer.domElement);
+
+    animate();
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+
+        shaderMaterial_1.uniforms.angle.value += 0.01;
+        shaderMaterial_2.uniforms.angle.value += 0.01;
+
+        renderer.render(scene, camera);
+
+    }
+
+    function rotationShader() { //vertex shader 
+        return `
+        uniform float angle;
+        #define PI 3.1415926
+        void main( )    {
+                float sina = sin( angle ); 
+                float cosa = cos( angle + PI ); 
+                mat4 rotMat = mat4(          
+                        cosa, 0.0, -sina, 0.0,
+                         0.0, 1.0,   0.0, 0.0,
+                        sina, 0.0,  cosa, 0.0,
+                         0.0, 0.0,   0.0, 1.0
+                );
+                
+                vec4 rotatedPosition = rotMat * vec4( position, 1.0 );
+                gl_Position = projectionMatrix * modelViewMatrix * rotatedPosition;
+        } 
+    `;
+    }
+
+    function fragmentShader_1() { //just applies yellow color
+        return `
+    void main( ) {
+        gl_FragColor = vec4( 1.0, 0.2, 0.3, 1.0 );
+    }
+    `;
+    }
+
+    function fragmentShader_2() { //just applies a  color
+        return `
+    void main( ) {
+        gl_FragColor = vec4(0.0, 0.8, 0.7, 0.05 );
+    }
+    `;
+    }
+
+</script>
+
+</html>

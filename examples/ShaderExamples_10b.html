@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<!--  -->
+
+<head>
+    <title> ShaderExamples_10b </title>
+    <meta charset="utf-8" />
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body> </body>
+
+<script type="module">
+
+    import * as THREE from '../jsm/three.module.135.js';
+    import { OrbitControls } from '../jsm/OrbitControls.135.js';
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 1000);
+    camera.position.set(0.5, 0.2, 1.6);
+    const scene = new THREE.Scene();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x488348);
+    document.body.appendChild(renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    const textureLoader = new THREE.TextureLoader()
+    const tex0 = textureLoader.load('../assets/uv_grid_opengl.jpg');
+    const tex1 = textureLoader.load('../assets/raster.png');
+
+    const planeWidth = 2.0;
+    const planeHeight = 1.5;
+
+    const backgroundGeometry = new THREE.PlaneBufferGeometry(planeWidth * 1.2, planeHeight * 1.2);
+    const backgrounMesh = new THREE.Mesh(backgroundGeometry, new THREE.MeshBasicMaterial({ color: 0xdfdfdf, side: THREE.DoubleSide }));
+    backgrounMesh.position.z = -0.5;
+    scene.add(backgrounMesh);
+
+    const shaderMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            v_Uv: { value: new THREE.Vector2() },
+            u_Texture: { value: tex0 },
+            u_planeAspect: { value: new THREE.Vector2(planeWidth, planeHeight) },
+        },
+        vertexShader: vertexShader(),
+        fragmentShader: fragmentShader(),
+        transparent: true,
+    });
+
+    const planeGeometry = new THREE.PlaneBufferGeometry(planeWidth, planeHeight);
+    const planeMesh = new THREE.Mesh(planeGeometry, shaderMaterial);
+    scene.add(planeMesh);
+
+    let isTex0 = true;
+
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("resize", onWindowResize);
+
+    animate();
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+
+    }
+
+    function onPointerUp() {
+
+        if (!isTex0) {
+
+            shaderMaterial.uniforms.u_Texture.value = tex0;
+            isTex0 = true;
+
+        } else {
+
+            shaderMaterial.uniforms.u_Texture.value = tex1;
+            isTex0 = false;
+
+        }
+
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+
+    }
+
+    function vertexShader() {
+
+        return `
+        varying vec2 v_Uv;
+        void main( )    {
+                v_Uv = uv;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                gl_Position = projectionMatrix * mvPosition;         
+        }
+    `;
+
+    }
+
+    function fragmentShader() {
+
+        return `
+        varying vec2 v_Uv;
+        uniform sampler2D u_Texture;
+        uniform vec2 u_planeAspect;
+        
+        void main( ) {
+        
+            float aspect = u_planeAspect.x / u_planeAspect.y;
+            
+            float radius = 0.45;
+ 
+            vec2 dotUV = vec2( fract( v_Uv * 10.0 ) );                    
+            dotUV *= vec2( aspect, 1.0 );
+            dotUV -= vec2( 0.7, 0.53 );
+                
+            if( length( dotUV ) > radius ) discard;
+            
+            vec3 color = ( texture2D( u_Texture, v_Uv ).rgb ); 
+            gl_FragColor =  vec4( color, 1.0 );
+            
+        }
+    `;
+    }
+</script>
+
+</html>

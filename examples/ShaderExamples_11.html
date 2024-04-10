@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<!--  -->
+
+<head>
+    <title> ShaderExamples_11 </title>
+    <meta charset="utf-8" />
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body> </body>
+
+<script type="module">
+
+    import * as THREE from '../jsm/three.module.135.js';
+    import { OrbitControls } from '../jsm/OrbitControls.135.js';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 1000);
+    camera.position.set(0, 0, 1.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xdedede);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    const circleGeometry = new THREE.CircleBufferGeometry(1, 6);
+    const circleMesh = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+    circleMesh.position.z = -2.0;
+    scene.add(circleMesh);
+
+    const planeWidth = 1.2;
+    const planeHeight = 1.2;
+
+    const shaderMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            v_Uv: { value: new THREE.Vector2() },
+        },
+        vertexShader: vertexShader(),
+        fragmentShader: fragmentShader(),
+        side: THREE.DoubleSide,
+        transparent: true,
+    });
+
+    const geometry = new THREE.PlaneBufferGeometry(planeWidth, planeHeight);
+    const mesh = new THREE.Mesh(geometry, shaderMaterial);
+
+    scene.add(mesh);
+
+    animate();
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+
+    }
+
+    function vertexShader() {
+        return `
+        varying vec2 v_Uv;
+        
+		void main( )	{
+
+				v_Uv = uv;
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+				gl_Position = projectionMatrix * mvPosition;
+            
+		} 
+    `;
+    }
+
+    function fragmentShader() {
+        return `
+        varying vec2 v_Uv;
+        
+        void main( ) {
+            
+            vec2 position = v_Uv;
+            float vertical = 0.0;
+            float horizontal = 0.0;
+            
+            position *= 16.5;
+            position = fract( position );
+
+            float i1 = 0.0;
+            float i2 = 0.5;
+            
+            // sieve
+            vertical =   step( i1, position.x ) - step( i2, position.x );
+            horizontal = step( i1, position.y ) - step( i2, position.y );
+    
+            float a1 = vertical + horizontal ;
+            
+            if( a1 < 0.5 ) return;
+            // float alpha = a1 > 0.5 ? 1.0 : 0.0; // other variant
+            
+            vec3 color = vec3( 0.1, 0.7, 0.4 );
+            
+            gl_FragColor = vec4( color, 1.0 );
+            // gl_FragColor = vec4( color, alpha ); // other variant
+            
+        }
+    `;
+    }
+
+    // ...................................................................
+
+    /*  // Try it out, replace the main function.
+    
+            void main( ) {
+                
+                vec2 position = v_Uv;
+                
+                position *= 20.0;
+                position = fract( position + vec2( 0.05, 0.05 ) );
+                
+                float a = 0.5 * ( position.x + position.y );
+                if( a > 0.54 ) return;
+                
+                vec3 color = vec3( 0.1, 0.7, 0.4 ); 
+                gl_FragColor = vec4( color, 1.0 );
+                
+            }
+            
+        // or
+        
+            void main( ) {
+                
+                vec2 position = v_Uv;
+                vec2 c = vec2( 0.2, 0.7 );
+                
+                position.x *= 12.0;
+                position.y *= 8.0;
+                
+                position = fract( position + vec2( -0.25, 0.15  ) );
+    
+                float a = distance( position, c );
+                 
+                if( a > 0.28 ) return;
+                
+                vec3 color = vec3( 0.1, 0.7, 0.4 ); 
+                gl_FragColor = vec4( color, 1.0 );
+                
+            }        
+    
+    */
+
+</script>
+
+</html>

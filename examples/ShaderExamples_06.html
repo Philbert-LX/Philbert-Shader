@@ -2,7 +2,7 @@
 <!--  -->
 
 <head>
-    <title> shader-example-01 </title>
+    <title> ShaderExamples_06 </title>
     <meta charset="utf-8" />
     <style>
         body {
@@ -16,32 +16,31 @@
 
 <script type="module">
 
+
     import * as THREE from '../jsm/three.module.135.js';
     import { OrbitControls } from '../jsm/OrbitControls.135.js';
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-    camera.position.set(0, 0, 7);
+    camera.position.set(-1, 2, 5);
 
     const scene = new THREE.Scene();
 
-    const circleGeometry = new THREE.CircleBufferGeometry(6, 64);
-    const circleMesh = new THREE.Mesh(circleGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-    circleMesh.position.z = -4.0;
-    scene.add(circleMesh);
+    const planeWidth = 4;
+    const planeHeight = 4;
 
     const shaderMaterial = new THREE.ShaderMaterial({
         uniforms: {
-            v_Uv: { value: new THREE.Vector2() }
+            v_Uv: { value: new THREE.Vector2() },
         },
         vertexShader: vertexShader(),
         fragmentShader: fragmentShader(),
         side: THREE.DoubleSide,
-        transparent: true,
     });
 
-    const planeGeometry = new THREE.PlaneBufferGeometry(5, 5);
-    const planeMesh = new THREE.Mesh(planeGeometry, shaderMaterial);
-    scene.add(planeMesh);
+    const geometry = new THREE.PlaneBufferGeometry(planeWidth, planeHeight);
+    const mesh = new THREE.Mesh(geometry, shaderMaterial);
+
+    scene.add(mesh);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -59,34 +58,43 @@
 
     }
 
-    function vertexShader() { //   return `    `;   a multiline template literal
+    function vertexShader() {
         return `
         varying vec2 v_Uv;
-
-		void main( ) {
+        
+		void main( )	{
 
 				v_Uv = uv;
 				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
 				gl_Position = projectionMatrix * mvPosition;
-
-		}
+            
+		} 
     `;
     }
 
     function fragmentShader() {
         return `
         varying vec2 v_Uv;
+        
+        float circle( vec2 st, vec2 c, float r ) { // st: position   c: center  r: radius
+            vec2 dist = st - c;  // distance
+            return 1.0 - smoothstep( r - ( r * 0.01 ), r + ( r * 0.01 ), dot( dist, dist ) * 4.0 );
+        }
 
         void main( ) {
-
+            
             vec2 position = v_Uv;
-
-            vec3 color = vec3( position.y, position );
-
-            gl_FragColor = vec4( color, position.y ); // color, transparency
-
-         // gl_FragColor = vec4( position.x, position.x, position.y, position.y ); // is identical
-
+            
+            vec2 center1 = vec2( 0.2, 0.7 );
+            vec3 color1 = vec3( 0.1, 0.9, 1.0 );
+            
+            vec2 center2 = vec2( 0.6, 0.4 );
+            vec3 color2 = vec3( 0.9, 0.7, 0.3 );
+            // try also  -   *   /   between the colors 1 2 
+            vec3 color = color1 * vec3( circle( position, center1, 0.8 ) )   +   color2 * vec3( circle( position, center2, 0.6 ) );
+            
+            gl_FragColor = vec4( color, 1.0 );
+            
         }
     `;
     }
